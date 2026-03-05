@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Dash Pro</title>
+    <title>SABRINA-GOTCHI v01</title>
     <style>
         :root {
             --bg-color: #88a040;
@@ -20,6 +20,28 @@
         body.yellow     { --bg-color: #2b2b00; --text-color: #ffff00; }
         body.purple     { --bg-color: #1a001a; --text-color: #df00ff; }
 
+        /* High Speed Shake Animation */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-2px, -1px) rotate(-1deg); }
+            40% { transform: translate(-1px, 1px) rotate(1deg); }
+            60% { transform: translate(2px, 1px) rotate(0deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            100% { transform: translate(1px, 1px) rotate(-1deg); }
+        }
+
+        /* Scrolling Animation */
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-150%); } /* Extra buffer for long quotes */
+        }
+
+        .speed-alert {
+            animation: shake 0.15s infinite;
+            border-color: #ff0000 !important;
+            box-shadow: 0 0 20px rgba(255,0,0,0.5);
+        }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -27,10 +49,10 @@
             color: var(--text-color);
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
-            padding: 15px;
+            padding: 10px;
             display: flex;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: background 0.3s ease;
             overflow: hidden;
         }
 
@@ -39,23 +61,25 @@
             max-width: 450px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             border: var(--border);
             padding: 15px;
             border-radius: 20px;
+            background: inherit;
         }
 
-        /* Landscape Layout */
-        @media (orientation: landscape) {
-            .dashboard {
-                max-width: 900px;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: auto auto auto;
-            }
-            .top-row { grid-column: span 2; }
-            .speed-box { grid-column: 1; grid-row: 2 / 4; }
+        /* App Branding Header */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: var(--border);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
         }
+
+        .app-name { font-weight: 900; font-size: 1.1rem; letter-spacing: 1px; }
+        .app-ver { font-size: 0.7rem; opacity: 0.8; }
 
         .panel {
             border: var(--border);
@@ -64,6 +88,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            background: rgba(0,0,0,0.05);
+            position: relative;
         }
 
         .row { display: flex; gap: 10px; width: 100%; }
@@ -72,14 +98,31 @@
         #avatar { font-size: 4rem; font-weight: bold; min-height: 80px; }
         #speed { font-size: 6rem; line-height: 1; margin: 5px 0; }
         
-        .label { font-size: 0.8rem; letter-spacing: 2px; font-weight: bold; }
+        .label { font-size: 0.7rem; letter-spacing: 2px; font-weight: bold; opacity: 0.8; }
         .unit { font-size: 1.2rem; }
         
+        #quote-container {
+            font-size: 1.35rem; 
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            font-weight: bold;
+        }
+
+        .scroll-text {
+            position: absolute;
+            white-space: nowrap;
+            animation: scroll-left 12s linear infinite;
+        }
+
         .controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
         button {
@@ -94,25 +137,29 @@
         }
 
         button:active { opacity: 0.7; }
-        
         #direction { font-size: 1.5rem; background: var(--text-color); color: var(--bg-color); display: inline-block; padding: 2px 8px; }
     </style>
 </head>
 <body class="retro-green">
 
-    <div class="dashboard">
-        <div class="row top-row">
+    <div class="dashboard" id="mainDash">
+        <div class="app-header">
+            <span class="app-name">SABRINA-GOTCHI</span>
+            <span class="app-ver">ver:01</span>
+        </div>
+
+        <div class="row">
             <div class="panel half">
                 <div id="avatar">~_~</div>
             </div>
             <div class="panel half">
                 <div class="label">DIRECTION</div>
                 <div><span id="direction">N</span></div>
-                <div style="font-size: 0.6rem; margin-top:5px">NW N NE<br>W + E<br>SW S SE</div>
+                <div style="font-size: 0.5rem; margin-top:5px">NW N NE | W + E | SW S SE</div>
             </div>
         </div>
 
-        <div class="panel speed-box">
+        <div class="panel">
             <div class="label">SPEED</div>
             <div id="speed">0</div>
             <div class="unit">MPH</div>
@@ -130,6 +177,13 @@
             </div>
         </div>
 
+        <div class="panel">
+            <div class="label">COMMS</div>
+            <div id="quote-container">
+                <span class="scroll-text">SYSTEM READY... STANDBY...</span>
+            </div>
+        </div>
+
         <div class="controls">
             <button onclick="startTracking()" id="startBtn">🛰️ Start GPS</button>
             <button onclick="calibrateLevel()">⚖️ Level</button>
@@ -142,19 +196,51 @@
         let topSpeed = 0;
         let pitchOffset = 0;
         let currentRawPitch = 0;
+        let quoteTimeout;
         const themes = ['retro-green', 'monochrome', 'blue', 'orange', 'red', 'turquoise', 'yellow', 'purple'];
         let themeIdx = 0;
 
+        const quotes = [
+            "Keep going, you've got this!", "Never give up on your dreams.", "Stay strong.",
+            "One step at a time.", "Don't let this experience shrink you down.", 
+            "I believe in you.", "You are strong and capable.", "Trust yourself.",
+            "You are worthy and deserving.", "Your hard work doesn't go unnoticed.",
+            "Hang in there.", "This is only temporary.", "Take a deep breath.",
+            "Be gentle with yourself.", "Rest and recharge.", 
+            "Do the best you can until you know better.",
+            "Start where you are. Use what you have. Do what you can.",
+            "What if everything works out?", "It's worth a shot!",
+            "Be not afraid of growing slowly.", "You're doing a great job.",
+            "I trust you to handle this.", "You are a fabulous example for all of us.",
+            "Your contributions are valuable.", "Keep pushing!", "You matter.",
+            "Go for it!", "Believe in yourself"
+        ];
+
+        function updateQuote() {
+            const container = document.getElementById('quote-container');
+            container.innerHTML = '';
+            
+            const span = document.createElement('span');
+            span.className = 'scroll-text';
+            span.innerText = quotes[Math.floor(Math.random() * quotes.length)].toUpperCase();
+            container.appendChild(span);
+
+            // Random interval between 2 and 5 minutes
+            const nextTime = (2 + Math.random() * 3) * 60 * 1000;
+            clearTimeout(quoteTimeout);
+            quoteTimeout = setTimeout(updateQuote, nextTime);
+        }
+
         function startTracking() {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') initSensors();
-                    });
+                DeviceOrientationEvent.requestPermission().then(state => {
+                    if (state === 'granted') initSensors();
+                });
             } else {
                 initSensors();
             }
             document.getElementById('startBtn').innerText = "🛰️ Active";
+            updateQuote();
         }
 
         function initSensors() {
@@ -172,9 +258,16 @@
             const speedMph = Math.round((pos.coords.speed || 0) * 2.237);
             const altFt = Math.round((pos.coords.altitude || 0) * 3.28);
             const heading = pos.coords.heading;
+            const dash = document.getElementById('mainDash');
 
             document.getElementById('speed').innerText = speedMph;
             document.getElementById('alt').innerText = altFt;
+
+            if (speedMph > 70) {
+                dash.classList.add('speed-alert');
+            } else {
+                dash.classList.remove('speed-alert');
+            }
             
             if (speedMph > topSpeed) {
                 topSpeed = speedMph;
@@ -190,7 +283,7 @@
         function updateAvatar(speed, grad) {
             const el = document.getElementById('avatar');
             if (Math.abs(grad) > 15) el.innerText = ">_<";
-            else if (speed > 75) el.innerText = "X_x";
+            else if (speed > 70) el.innerText = "X_X"; 
             else if (speed > 55) el.innerText = "O_o";
             else if (speed > 30) el.innerText = "^-^";
             else if (grad > 7) el.innerText = "p_p";
@@ -198,9 +291,7 @@
             else el.innerText = "~_~";
         }
 
-        function calibrateLevel() {
-            pitchOffset = currentRawPitch;
-        }
+        function calibrateLevel() { pitchOffset = currentRawPitch; }
 
         function cycleTheme() {
             document.body.classList.remove(themes[themeIdx]);
@@ -211,6 +302,7 @@
         function resetAll() {
             topSpeed = 0;
             document.getElementById('top-speed').innerText = 0;
+            document.getElementById('mainDash').classList.remove('speed-alert');
         }
     </script>
 </body> 

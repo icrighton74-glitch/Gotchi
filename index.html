@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Dash Pro</title>
+    <style>
+        :root {
+            --bg-color: #88a040;
+            --text-color: #1a1f08;
+            --border: 3px solid var(--text-color);
+        }
+
+        /* Theme Library */
+        body.monochrome { --bg-color: #b0b0b0; --text-color: #000; }
+        body.blue       { --bg-color: #001d3d; --text-color: #00ccff; }
+        body.orange     { --bg-color: #2b1000; --text-color: #ff8c00; }
+        body.red        { --bg-color: #1a0000; --text-color: #ff0000; }
+        body.turquoise  { --bg-color: #002626; --text-color: #40e0d0; }
+        body.yellow     { --bg-color: #2b2b00; --text-color: #ffff00; }
+        body.purple     { --bg-color: #1a001a; --text-color: #df00ff; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: var(--border);
+            padding: 15px;
+            border-radius: 20px;
+        }
+
+        /* Landscape Layout */
+        @media (orientation: landscape) {
+            .dashboard {
+                max-width: 900px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .top-row { grid-column: span 2; }
+            .speed-box { grid-column: 1; grid-row: 2 / 4; }
+        }
+
+        .panel {
+            border: var(--border);
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .row { display: flex; gap: 10px; width: 100%; }
+        .half { width: 50%; }
+
+        #avatar { font-size: 4rem; font-weight: bold; min-height: 80px; }
+        #speed { font-size: 6rem; line-height: 1; margin: 5px 0; }
+        
+        .label { font-size: 0.8rem; letter-spacing: 2px; font-weight: bold; }
+        .unit { font-size: 1.2rem; }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        button:active { opacity: 0.7; }
+        
+        #direction { font-size: 1.5rem; background: var(--text-color); color: var(--bg-color); display: inline-block; padding: 2px 8px; }
+    </style>
+</head>
+<body class="retro-green">
+
+    <div class="dashboard">
+        <div class="row top-row">
+            <div class="panel half">
+                <div id="avatar">~_~</div>
+            </div>
+            <div class="panel half">
+                <div class="label">DIRECTION</div>
+                <div><span id="direction">N</span></div>
+                <div style="font-size: 0.6rem; margin-top:5px">NW N NE<br>W + E<br>SW S SE</div>
+            </div>
+        </div>
+
+        <div class="panel speed-box">
+            <div class="label">SPEED</div>
+            <div id="speed">0</div>
+            <div class="unit">MPH</div>
+            <div style="font-size:0.7rem; margin-top:5px">★ TOP: <span id="top-speed">0</span></div>
+        </div>
+
+        <div class="row">
+            <div class="panel half">
+                <div class="label">ALT</div>
+                <div style="font-size: 1.5rem"><span id="alt">0</span> FT</div>
+            </div>
+            <div class="panel half">
+                <div class="label">GRAD</div>
+                <div style="font-size: 1.5rem"><span id="grad">0</span>%</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="startTracking()" id="startBtn">🛰️ Start GPS</button>
+            <button onclick="calibrateLevel()">⚖️ Level</button>
+            <button onclick="cycleTheme()">🎨 Color</button>
+            <button onclick="resetAll()">🔄 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let topSpeed = 0;
+        let pitchOffset = 0;
+        let currentRawPitch = 0;
+        const themes = ['retro-green', 'monochrome', 'blue', 'orange', 'red', 'turquoise', 'yellow', 'purple'];
+        let themeIdx = 0;
+
+        function startTracking() {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') initSensors();
+                    });
+            } else {
+                initSensors();
+            }
+            document.getElementById('startBtn').innerText = "🛰️ Active";
+        }
+
+        function initSensors() {
+            navigator.geolocation.watchPosition(updateGPS, null, { enableHighAccuracy: true });
+            window.addEventListener('deviceorientation', (e) => {
+                currentRawPitch = e.beta;
+                const truePitch = currentRawPitch - pitchOffset;
+                const grad = Math.round(Math.tan(truePitch * (Math.PI/180)) * 100);
+                document.getElementById('grad').innerText = Math.min(Math.max(grad, -99), 99);
+                updateAvatar(parseInt(document.getElementById('speed').innerText), grad);
+            });
+        }
+
+        function updateGPS(pos) {
+            const speedMph = Math.round((pos.coords.speed || 0) * 2.237);
+            const altFt = Math.round((pos.coords.altitude || 0) * 3.28);
+            const heading = pos.coords.heading;
+
+            document.getElementById('speed').innerText = speedMph;
+            document.getElementById('alt').innerText = altFt;
+            
+            if (speedMph > topSpeed) {
+                topSpeed = speedMph;
+                document.getElementById('top-speed').innerText = topSpeed;
+            }
+
+            if (heading !== null) {
+                const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                document.getElementById('direction').innerText = directions[Math.round(heading / 45) % 8];
+            }
+        }
+
+        function updateAvatar(speed, grad) {
+            const el = document.getElementById('avatar');
+            if (Math.abs(grad) > 15) el.innerText = ">_<";
+            else if (speed > 75) el.innerText = "X_x";
+            else if (speed > 55) el.innerText = "O_o";
+            else if (speed > 30) el.innerText = "^-^";
+            else if (grad > 7) el.innerText = "p_p";
+            else if (grad < -7) el.innerText = "O_O";
+            else el.innerText = "~_~";
+        }
+
+        function calibrateLevel() {
+            pitchOffset = currentRawPitch;
+        }
+
+        function cycleTheme() {
+            document.body.classList.remove(themes[themeIdx]);
+            themeIdx = (themeIdx + 1) % themes.length;
+            document.body.classList.add(themes[themeIdx]);
+        }
+
+        function resetAll() {
+            topSpeed = 0;
+            document.getElementById('top-speed').innerText = 0;
+        }
+    </script>
+</body> 
+</html>

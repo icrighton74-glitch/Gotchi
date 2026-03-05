@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SABRINA-GOTCHI v01</title>
+    <title>SABRINA-GOTCHI v02</title>
     <style>
         :root {
             --bg-color: #88a040;
@@ -33,7 +33,7 @@
         /* Scrolling Animation */
         @keyframes scroll-left {
             0% { transform: translateX(100%); }
-            100% { transform: translateX(-150%); } /* Extra buffer for long quotes */
+            100% { transform: translateX(-180%); } 
         }
 
         .speed-alert {
@@ -54,6 +54,7 @@
             justify-content: center;
             transition: background 0.3s ease;
             overflow: hidden;
+            height: 100vh;
         }
 
         .dashboard {
@@ -66,9 +67,9 @@
             padding: 15px;
             border-radius: 20px;
             background: inherit;
+            align-self: center;
         }
 
-        /* App Branding Header */
         .app-header {
             display: flex;
             justify-content: space-between;
@@ -95,7 +96,7 @@
         .row { display: flex; gap: 10px; width: 100%; }
         .half { width: 50%; }
 
-        #avatar { font-size: 4rem; font-weight: bold; min-height: 80px; }
+        #avatar { font-size: 4rem; font-weight: bold; min-height: 80px; transition: all 0.2s; }
         #speed { font-size: 6rem; line-height: 1; margin: 5px 0; }
         
         .label { font-size: 0.7rem; letter-spacing: 2px; font-weight: bold; opacity: 0.8; }
@@ -197,6 +198,7 @@
         let pitchOffset = 0;
         let currentRawPitch = 0;
         let quoteTimeout;
+        let isReacting = false;
         const themes = ['retro-green', 'monochrome', 'blue', 'orange', 'red', 'turquoise', 'yellow', 'purple'];
         let themeIdx = 0;
 
@@ -225,7 +227,17 @@
             span.innerText = quotes[Math.floor(Math.random() * quotes.length)].toUpperCase();
             container.appendChild(span);
 
-            // Random interval between 2 and 5 minutes
+            // Avatar Reaction Logic
+            isReacting = true;
+            const reactions = ["^o^", "*-*", "OwO", "^_^", ">v<"];
+            document.getElementById('avatar').innerText = reactions[Math.floor(Math.random() * reactions.length)];
+            
+            // Return to normal state after 5 seconds
+            setTimeout(() => {
+                isReacting = false;
+                updateAvatar(parseInt(document.getElementById('speed').innerText), parseInt(document.getElementById('grad').innerText));
+            }, 5000);
+
             const nextTime = (2 + Math.random() * 3) * 60 * 1000;
             clearTimeout(quoteTimeout);
             quoteTimeout = setTimeout(updateQuote, nextTime);
@@ -250,7 +262,7 @@
                 const truePitch = currentRawPitch - pitchOffset;
                 const grad = Math.round(Math.tan(truePitch * (Math.PI/180)) * 100);
                 document.getElementById('grad').innerText = Math.min(Math.max(grad, -99), 99);
-                updateAvatar(parseInt(document.getElementById('speed').innerText), grad);
+                if (!isReacting) updateAvatar(parseInt(document.getElementById('speed').innerText), grad);
             });
         }
 
@@ -281,6 +293,7 @@
         }
 
         function updateAvatar(speed, grad) {
+            if (isReacting) return; // Don't override special reactions
             const el = document.getElementById('avatar');
             if (Math.abs(grad) > 15) el.innerText = ">_<";
             else if (speed > 70) el.innerText = "X_X"; 
